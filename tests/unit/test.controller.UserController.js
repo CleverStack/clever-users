@@ -1,18 +1,18 @@
 var expect      = require( 'chai' ).expect
   , sinon       = require( 'sinon' )
   , injector    = require( 'injector' )
-  , authModule
+  , usersModule
   , Controller
   , Service
   , UserService = null
   , users = []
   , new_user;
 
-describe( 'CleverAuth.Controller.UserController', function () {
+describe( 'CleverUsers.Controller.UserController', function () {
 
     before( function( done ) {
-        authModule      = injector.getInstance( 'cleverAuth' );
-        Controller      = authModule.controllers.UserController;
+        usersModule     = injector.getInstance( 'cleverUsers' );
+        Controller      = usersModule.controllers.UserController;
         Service         = injector.getInstance( 'AccountService' );
         UserService     = injector.getInstance( 'UserService' );
 

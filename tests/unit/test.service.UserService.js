@@ -12,8 +12,8 @@ var expect      = require( 'chai' ).expect
 describe( 'CleverAuth.Service.UserService', function () {
 
     before( function( done ) {
-        UserService = injector.getInstance( 'cleverAuth' ).services.UserService;
-        UserModel   = injector.getInstance( 'cleverAuth' ).models.UserModel;
+        UserService = injector.getInstance( 'cleverUsers' ).services.UserService;
+        UserModel   = injector.getInstance( 'cleverUsers' ).models.UserModel;
 
         done();
     });
@@ -36,13 +36,13 @@ describe( 'CleverAuth.Service.UserService', function () {
 
         var joesData = {
             username:   'Joe',
-            email:      'joe@cleverAuth.com',
+            email:      'joe@cleverUsers.com',
             password:   '1234',
             confirmed:  true
         };
         var rachelsData = {
             username:   'Rachel',
-            email:      'rachel@cleverAuth.com',
+            email:      'rachel@cleverUsers.com',
             password:   '1234',
             confirmed:  true
         };
@@ -157,8 +157,8 @@ describe( 'CleverAuth.Service.UserService', function () {
         it( 'should create a user', function( done ) {
 
             var data = {
-                username:   'newUser@cleverAuth.com',
-                email:      'newUser@cleverAuth.com',
+                username:   'newUser@cleverUsers.com',
+                email:      'newUser@cleverUsers.com',
                 password:   '1234',
                 confirmed:  true
             };
@@ -181,8 +181,8 @@ describe( 'CleverAuth.Service.UserService', function () {
         it( 'should auto generate random password when password is not given', function( done ) {
 
             var data = {
-                username:   'autoGeneratePassword@cleverAuth.com',
-                email:      'autoGeneratePassword@cleverAuth.com',
+                username:   'autoGeneratePassword@cleverUsers.com',
+                email:      'autoGeneratePassword@cleverUsers.com',
                 confirmed:  true
             };
 
@@ -270,8 +270,8 @@ describe( 'CleverAuth.Service.UserService', function () {
         it( 'hash password when new password is given', function ( done ) {
 
             var data = {
-                username:   'hashPassword@cleverAuth.com',
-                email:      'hashPassword@cleverAuth.com',
+                username:   'hashPassword@cleverUsers.com',
+                email:      'hashPassword@cleverUsers.com',
                 password:   '1234',
                 confirmed:  true
             };

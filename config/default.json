@@ -1,6 +1,14 @@
 {
     "clever-users": {
-        "driver": "ORM",
-        "modelAssociations": {}
+        "driver"            : "ORM",
+        
+        "emailConfirmation" : false,
+
+        "requiresLogin": {
+            "all"           : true,
+            "postAction"    : false,
+            "recoverAction" : false,
+            "confirmAction" : false
+        }
     }
 }

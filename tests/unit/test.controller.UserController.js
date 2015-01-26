@@ -247,7 +247,7 @@ describe( 'CleverUsers.Controller.UserController', function () {
               , next = sinon.spy()
               , ctrl = null;
 
-            ctrl = injector.getInstance( 'AccountController' ).callback( 'newInstance' )( req, res, next );
+            ctrl = injector.getInstance( 'UserController' ).callback( 'newInstance' )( req, res, next );
         });
 
         it( 'should get an error if trying to create a user where email already exists in the database', function ( done ) {
@@ -501,14 +501,13 @@ describe( 'CleverUsers.Controller.UserController', function () {
         });
 
         it( 'Should send all existing users as an array', function( done ) {
-            var ctrl        = null
-              , lastJson    = JSON.parse( JSON.stringify( new_user ) );
+            var ctrl        = null;
 
-            var req = fakeRequest({
+            var req         = fakeRequest({
                 method: 'GET',
                 query: {},
                 params: {},
-                user: { id: new_user.id, hasAdminRights: true, account: { id: 5 } },
+                user: { id: new_user.id, hasAdminRights: true, account: { id: new_user.AccountId } },
                 login: function( user, fn ) {
                     fn( !!user && !!user.id ? null : 'Unknown error' );
                 },
@@ -517,13 +516,7 @@ describe( 'CleverUsers.Controller.UserController', function () {
 
             var res = fakeResponse( function( code, result ) {
                 expect( code ).to.equal( 200 );
-
-                var modelJson = JSON.parse( JSON.stringify( result[ result.length - 1 ] ) );
-
-                Object.keys( lastJson ).forEach( function( key ) {
-                    expect( modelJson[ key ] ).to.eql( lastJson[ key ] );
-                });
-
+                expect( result ).to.be.an( 'array' );
                 expect( ctrl.action ).to.equal( 'listAction' );
 
                 done();

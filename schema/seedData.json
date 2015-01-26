@@ -1,14 +1,46 @@
 {
     "UserModel": [
         {
-            "firstname": "Clever",
-            "lastname": "User",
-            "email": "default@cleverstack.io",
-            "username": "default",
-            "password": "a31a61e94f3799a9385dab9966c4c22c9f5790c4",
-            "hasAdminRight": true,
-            "confirmed": true,
-            "active": true
+            "firstname"     : "Clever",
+            "lastname"      : "User",
+            "email"         : "default@cleverstack.io",
+            "username"      : "default",
+            "password"      : "a31a61e94f3799a9385dab9966c4c22c9f5790c4",
+            "hasAdminRight" : true,
+            "confirmed"     : true,
+            "active"        : true
+        }
+    ],
+    "PermissionModel": [
+        {
+            "AccountId":        null,
+            "systemPermission": true,
+            "action":           "User.list",
+            "description":      "Allows the user to view a list of user/s within their account/s."
+        },
+        {
+            "AccountId":        null,
+            "systemPermission": true,
+            "action":           "User.view",
+            "description":      "Allows the user to view details about any user/s within their account/s."
+        },
+        {
+            "AccountId":        null,
+            "systemPermission": true,
+            "action":           "User.create",
+            "description":      "Allows the user to create a new user for any of their account/s."
+        },
+        {
+            "AccountId":        null,
+            "systemPermission": true,
+            "action":           "User.edit",
+            "description":      "Allows the user to update any user/s within their account/s."
+        },
+        {
+            "AccountId":        null,
+            "systemPermission": true,
+            "action":           "User.delete",
+            "description":      "Allows the user to delete any user/s within their account/s."
         }
     ]
 }

@@ -9,7 +9,7 @@ var expect      = require( 'chai' ).expect
   , UserModel
   , UserService;
 
-describe( 'CleverAuth.Service.UserService', function () {
+describe( 'CleverUsers.Service.UserService', function () {
 
     before( function( done ) {
         UserService = injector.getInstance( 'cleverUsers' ).services.UserService;

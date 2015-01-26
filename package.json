@@ -34,5 +34,8 @@
     },
     "scripts": {
         "test":     "grunt test:unit"
-    }
+    },
+    "bundledDependencies": [
+        "clever-accounts"
+    ]
 }

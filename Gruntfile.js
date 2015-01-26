@@ -10,12 +10,14 @@ module.exports = function( grunt ) {
       , configFile      = null
       , config          = {}
       , usersSeedFile   = path.join( process.cwd(), 'modules', 'clever-users', 'schema', 'seedData.json' )
+      , usersSeedData   = {}
       , seedFile        = path.join( process.cwd(), 'schema', 'seedData.json' )
       , seed            = {}
       , foundUser       = false;
 
     if ( fs.existsSync( usersSeedFile ) ) {
-        _.extend( seed, require( usersSeedFile ) );
+        usersSeedData   = require( usersSeedFile );
+        _.extend( seed, usersSeedData );
     }
 
     if ( fs.existsSync( seedFile ) ) {
@@ -28,18 +30,18 @@ module.exports = function( grunt ) {
                 options: {
                     questions: [
                         {
-                            config: 'cleverauth.username',
+                            config: 'cleverusers.username',
                             type: 'input',
                             message: 'Default Username',
                             default: 'default',
                         },
                         {
                             type: 'confirm',
-                            config: 'cleverauth.overwrite',
+                            config: 'cleverusers.overwrite',
                             message: 'Overwrite existing user with the same username?',
                             when: function( answers ) {
                                 seed.UserModel.forEach( function( user, i ) {
-                                    if ( user.username === answers[ 'cleverauth.username' ] ) {
+                                    if ( user.username === answers[ 'cleverusers.username' ] ) {
                                         if ( foundUser === false ) {
                                             foundUser = [];
                                         }
@@ -51,34 +53,34 @@ module.exports = function( grunt ) {
                             }
                         },
                         {
-                            config: 'cleverauth.password',
+                            config: 'cleverusers.password',
                             type: 'password',
                             message: 'Default Users Password',
                             default: 'clever',
                             when: function( answers ) {
-                                if ( answers[ 'cleverauth.overwrite' ] === undefined || answers[ 'cleverauth.overwrite' ] === true ) {
+                                if ( answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true ) {
                                     return true;
                                 } else {
-                                    grunt.fail.fatal( 'Username `' + answers[ 'cleverauth.username' ] + '` already exists in seed data and you chose not to overwrite it!' );
+                                    grunt.fail.fatal( 'Username `' + answers[ 'cleverusers.username' ] + '` already exists in seed data and you chose not to overwrite it!' );
                                 }
                             }
                         },
                         {
-                            config: 'cleverauth.email',
+                            config: 'cleverusers.email',
                             type: 'input',
                             message: 'Default Users Email',
                             default: 'default@cleverstack.io'
                         },
                         {
                             type: 'confirm',
-                            config: 'cleverauth.overwrite',
+                            config: 'cleverusers.overwrite',
                             message: 'Overwrite existing user with the same email?',
                             when: function( answers ) {
-                                if ( answers[ 'cleverauth.overwrite' ] === true ) {
+                                if ( answers[ 'cleverusers.overwrite' ] === true ) {
                                     return false;
                                 } else {
                                     seed.UserModel.forEach( function( user, i ) {
-                                        if ( user.email === answers[ 'cleverauth.email' ] ) {
+                                        if ( user.email === answers[ 'cleverusers.email' ] ) {
                                             foundUser = i;
                                         }
                                     });
@@ -88,42 +90,42 @@ module.exports = function( grunt ) {
                             }
                         },
                         {
-                            config: 'cleverauth.firstname',
+                            config: 'cleverusers.firstname',
                             type: 'input',
                             message: 'Default Users Firstname',
                             default: 'Clever',
                             when: function( answers ) {
-                                if ( answers[ 'cleverauth.overwrite' ] === undefined || answers[ 'cleverauth.overwrite' ] === true ) {
+                                if ( answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true ) {
                                     return true;
                                 } else {
-                                    grunt.fail.fatal( 'Email `' + answers[ 'cleverauth.email' ] + '` already exists in seed data and you chose not to overwrite it!' );
+                                    grunt.fail.fatal( 'Email `' + answers[ 'cleverusers.email' ] + '` already exists in seed data and you chose not to overwrite it!' );
                                 }
                             }
                         },
                         {
-                            config: 'cleverauth.lastname',
+                            config: 'cleverusers.lastname',
                             type: 'input',
                             message: 'Default Users Lastname',
                             default: 'User',
                         },
                         {
-                            config: 'cleverauth.phone',
+                            config: 'cleverusers.phone',
                             type: 'input',
                             message: 'Default Users Phone Number',
                             default: ''
                         },
                         {
-                            config: 'cleverauth.hasAdminRight',
+                            config: 'cleverusers.hasAdminRight',
                             type: 'confirm',
                             message: 'Default User has admin rights'
                         },
                         {
-                            config: 'cleverauth.confirmed',
+                            config: 'cleverusers.confirmed',
                             type: 'confirm',
                             message: 'Default User has confirmed their email'
                         },
                         {
-                            config: 'cleverauth.active',
+                            config: 'cleverusers.active',
                             type: 'confirm',
                             message: 'Default User has an active account'
                         }
@@ -136,7 +138,7 @@ module.exports = function( grunt ) {
         
         grunt.registerTask( 'prompt:cleverUsersSeed', [ 'prompt:usersSeedDataPrompt', 'usersSeedData' ] );
         grunt.registerTask( 'usersSeedData', 'Creates seed data for clever-users module', function() {
-            var conf = grunt.config( 'cleverauth' );
+            var conf = grunt.config( 'cleverusers' );
 
             // Make sure the required array is there
             seed.UserModel = seed.UserModel || [];
@@ -156,7 +158,8 @@ module.exports = function( grunt ) {
             seed.UserModel.push( conf );
 
             fs.writeFileSync( seedFile, JSON.stringify( seed, null, '  ' ) );
-            fs.writeFileSync( authSeedFile, JSON.stringify( {}, null, '  ' ) );
+            delete usersSeedData.UserModel;
+            fs.writeFileSync( usersSeedFile, JSON.stringify( usersSeedData, null, '  ' ) );
 
             console.log( 'You should run `grunt db clever-auth` to rebase and seed this data in your database...' );
         });

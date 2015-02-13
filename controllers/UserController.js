@@ -243,33 +243,6 @@ module.exports = function( config, Controller, Promise, passport, UserService, A
         }
     },
     {
-        /**
-         * Responds to GET /user/1 or /user/action, we override this method so we can redirect to the
-         * listAction if no id has been provided
-         * 
-         * @return {undefined}
-         */
-        listAction: function () {
-            if ( !this.req.params.id ) {
-                this._super.apply( this, arguments );
-            } else {
-                this.getAction();
-            }
-        },
-
-        /**
-         * Responds to GET /user/1 or /user/action, we override this method so we can redirect to the
-         * listAction if no id has been provided
-         * 
-         * @return {undefined}
-         */
-        getAction: function () {
-            if ( !!this.req.params.id ) {
-                this._super.apply( this, arguments );
-            } else {
-                this.listAction();
-            }
-        },
 
         /**
          * Handles POST /user or GET/POST /user/post, this function will use the UserService to create a new user

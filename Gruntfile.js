@@ -6,10 +6,10 @@ var fs      = require( 'fs' )
   , _       = require( 'underscore' );
 
 module.exports = function( grunt ) {
-    var defaultConfig   = require( path.join( __dirname, 'config', 'default.json' ) )
-      , configFile      = null
-      , config          = {}
-      , usersSeedFile   = path.join( process.cwd(), 'modules', 'clever-users', 'schema', 'seedData.json' )
+    // var defaultConfig   = require( path.join( __dirname, 'config', 'default.json' ) )
+    //   , configFile      = null
+    //   , config          = {}
+    var usersSeedFile   = path.join( process.cwd(), 'modules', 'clever-users', 'schema', 'seedData.json' )
       , usersSeedData   = {}
       , seedFile        = path.join( process.cwd(), 'schema', 'seedData.json' )
       , seed            = {}

@@ -20,11 +20,13 @@ module.exports = function( Model, config ) {
         },
         username: {
             type:           String,
+            length:         191,
             unique:         true,
             required:       true
         },
         email: {
             type:           String,
+            length:         191,
             unique:         true,
             required:       true,
             validate: {

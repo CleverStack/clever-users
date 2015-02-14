@@ -23,6 +23,8 @@ module.exports = function( grunt ) {
         _.extend( seed, require( seedFile ) );
     }
 
+    seed.UserModel = seed.UserModel || [];
+
     return [{
         prompt: {
             usersSeedDataPrompt: {

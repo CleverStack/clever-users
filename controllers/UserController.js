@@ -1,7 +1,8 @@
-var crypto          = require( 'crypto' )
-  , async           = require( 'async' );
+var crypto   = require( 'crypto' )
+  , async    = require( 'async' )
+  , passport = require( 'passport' );
 
-module.exports = function( config, Controller, Promise, passport, UserService, AccountController ) {
+module.exports = function( config, Controller, Promise, UserService, AccountController ) {
     var UserController = Controller.extend({
         
         /**

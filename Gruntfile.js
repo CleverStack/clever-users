@@ -3,14 +3,13 @@
 var fs      = require( 'fs' )
   , path    = require( 'path' )
   , crypto  = require( 'crypto' )
-  , _       = require( 'underscore' );
+  , _       = require( 'underscore' )
+  , config  = require( 'config' );
 
 module.exports = function( grunt ) {
-    // var defaultConfig   = require( path.join( __dirname, 'config', 'default.json' ) )
-    //   , configFile      = null
-    //   , config          = {}
     var usersSeedFile   = path.join( process.cwd(), 'modules', 'clever-users', 'schema', 'seedData.json' )
       , usersSeedData   = {}
+      , seedConfig      = _.clone(config[ 'clever-users' ].seedDataPromptDefaults)
       , seedFile        = path.join( process.cwd(), 'schema', 'seedData.json' )
       , seed            = {}
       , foundUser       = false;
@@ -33,7 +32,7 @@ module.exports = function( grunt ) {
                             config: 'cleverusers.username',
                             type: 'input',
                             message: 'Default Username',
-                            default: 'default',
+                            default: seedConfig.username,
                         },
                         {
                             type: 'confirm',
@@ -56,7 +55,7 @@ module.exports = function( grunt ) {
                             config: 'cleverusers.password',
                             type: 'password',
                             message: 'Default Users Password',
-                            default: 'clever',
+                            default: seedConfig.password,
                             when: function( answers ) {
                                 if ( answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true ) {
                                     return true;
@@ -69,7 +68,7 @@ module.exports = function( grunt ) {
                             config: 'cleverusers.email',
                             type: 'input',
                             message: 'Default Users Email',
-                            default: 'default@cleverstack.io'
+                            default: seedConfig.email
                         },
                         {
                             type: 'confirm',
@@ -93,7 +92,7 @@ module.exports = function( grunt ) {
                             config: 'cleverusers.firstname',
                             type: 'input',
                             message: 'Default Users Firstname',
-                            default: 'Clever',
+                            default: foundUser ? foundUser.firstname : ( seedConfig.firstname || '' ),
                             when: function( answers ) {
                                 if ( answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true ) {
                                     return true;
@@ -106,13 +105,13 @@ module.exports = function( grunt ) {
                             config: 'cleverusers.lastname',
                             type: 'input',
                             message: 'Default Users Lastname',
-                            default: 'User',
+                            default: foundUser ? foundUser.lastname : ( seedConfig.lastname || '' ),
                         },
                         {
                             config: 'cleverusers.phone',
                             type: 'input',
                             message: 'Default Users Phone Number',
-                            default: ''
+                            default: foundUser ? foundUser.phone : ( seedConfig.phone || '' ),
                         },
                         {
                             config: 'cleverusers.hasAdminRight',
@@ -146,7 +145,9 @@ module.exports = function( grunt ) {
             // Remove the user if there is a duplicate
             if ( foundUser !== false ) {
                 foundUser.forEach( function( user ) {
-                    conf.associations = seed.UserModel[ user ].associations || {};
+                    if (seed.UserModel[ user ].associations) {
+                        conf.associations = seed.UserModel[ user ].associations;
+                    }
                     seed.UserModel.splice( user, 1 );
                 });
             }

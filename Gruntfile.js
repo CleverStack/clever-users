@@ -161,7 +161,7 @@ module.exports = function( grunt ) {
             delete usersSeedData.UserModel;
             fs.writeFileSync( usersSeedFile, JSON.stringify( usersSeedData, null, '  ' ) );
 
-            console.log( 'You should run `grunt db clever-auth` to rebase and seed this data in your database...' );
+            console.log( 'You should run `grunt db` to rebase and seed this data in your database...' );
         });
     }];
 };

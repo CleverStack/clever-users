@@ -11,10 +11,6 @@ module.exports = function( Model, config ) {
             primaryKey:     true,
             autoIncrement:  true
         },
-        googleIdentifier: {
-            type:           String,
-            allowNull:      true
-        },
         title: {
             type:           String
         },
@@ -36,11 +32,11 @@ module.exports = function( Model, config ) {
         password: {
             type:           String
         },
-        firstname: {
+        firstName: {
             type:           String,
             allowNull:      true
         },
-        lastname: {
+        lastName: {
             type:           String,
             allowNull:      true
         },
@@ -62,10 +58,8 @@ module.exports = function( Model, config ) {
         },
         accessedAt:         Date,
 
-        getters: {
-            fullName: function() {
-                return !!this.firstname && !!this.lastname ? [ this.firstname, this.lastname ].join( ' ' ) : '';
-            }
+        getFullName: function() {
+            return !!this.firstname || !!this.lastname ? [ this.firstname, this.lastname ].join( ' ' ) : '';
         }
     });
 };

@@ -341,7 +341,7 @@ describe( 'CleverUsers.Controller.UserController', function () {
         it( 'should use UserService.update() to update a user', function ( done ) {
             var data = {
                     id: new_user.id,
-                    firstname: 'petrushka'
+                    firstName: 'petrushka'
                 }
               , req = fakeRequest({
                     url: '/auth/user/' + new_user.id,
@@ -364,7 +364,7 @@ describe( 'CleverUsers.Controller.UserController', function () {
                     expect( status ).to.equal( 200 );
                     expect( result ).to.be.an( 'object' );
                     expect( result ).to.have.property( 'id' ).and.equal( new_user.id );
-                    expect( result ).to.have.property( 'firstname' ).and.equal( data.firstname );
+                    expect( result ).to.have.property( 'firstName' ).and.equal( data.firstName );
 
                     // Be sure that the password is not getting updated unless changed
                     expect( result ).to.have.property( 'password' ).and.equal( new_user.password );
@@ -379,7 +379,7 @@ describe( 'CleverUsers.Controller.UserController', function () {
                     expect( spyCall[0] ).to.be.an( 'object' ).and.to.have.property( 'where' ).and.to.have.property( 'id' );
                     expect( spyCall[1] ).to.be.an( 'object' );
                     expect( spyCall[1] ).to.have.property( 'id' ).and.equal( data.id );
-                    expect( spyCall[1] ).to.have.property( 'firstname' ).and.equal( data.firstname );
+                    expect( spyCall[1] ).to.have.property( 'firstName' ).and.equal( data.firstName );
 
                     spy.restore();
 
@@ -394,7 +394,7 @@ describe( 'CleverUsers.Controller.UserController', function () {
 
         it( 'should get an error if trying to update a user without a valid id', function ( done ) {
             var data = {
-                    firstname: 'fail'
+                    firstName: 'fail'
                 }
               , req = fakeRequest({
                     url: '/auth/user/',

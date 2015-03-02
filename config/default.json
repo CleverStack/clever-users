@@ -1,25 +1,25 @@
 {
-    "clever-users": {
-        "driver"            : "ORM",
-        
-        "emailConfirmation" : false,
+  "clever-users": {
+    "driver": "ORM",
+    
+    "emailConfirmation": false,
 
-        "requiresLogin": {
-            "all"           : true,
-            "postAction"    : false,
-            "recoverAction" : false,
-            "confirmAction" : false
-        },
+    "requiresLogin": {
+      "all"           : true,
+      "postAction"    : false,
+      "recoverAction" : false,
+      "confirmAction" : false
+    },
 
-        "seedDataPromptDefaults": {
-            "firstname"     : "Clever",
-            "lastname"      : "User",
-            "email"         : "default@cleverstack.io",
-            "username"      : "default",
-            "password"      : "a31a61e94f3799a9385dab9966c4c22c9f5790c4",
-            "hasAdminRight" : true,
-            "confirmed"     : true,
-            "active"        : true
-        }
+    "seedDataPromptDefaults": {
+      "firstName"     : "Clever",
+      "lastName"      : "User",
+      "email"         : "default@cleverstack.io",
+      "username"      : "default",
+      "password"      : "a31a61e94f3799a9385dab9966c4c22c9f5790c4",
+      "hasAdminRight" : true,
+      "confirmed"     : true,
+      "active"        : true
     }
+  }
 }

@@ -1,170 +1,169 @@
-'use strict';
+module.exports = function(grunt) {
+  'use strict';
 
-var fs      = require( 'fs' )
-  , path    = require( 'path' )
-  , crypto  = require( 'crypto' )
-  , _       = require( 'underscore' )
-  , config  = require( 'config' );
+  var fs            = require('fs')
+    , path          = require('path')
+    , crypto        = require('crypto')
+    , underscore    = require('underscore')
+    , config        = require('config')
+    , moduleSeedFile = path.resolve(path.join(__dirname, 'schema', 'seedData.json'))
+    , moduleSeedData = {}
+    , seedDataDefaults    = underscore.clone(config[ 'clever-users' ].seedDataPromptDefaults)
+    , projectSeedFile      = path.join(process.cwd(), 'schema', 'seedData.json')
+    , seedData          = {}
+    , foundUser     = false;
 
-module.exports = function( grunt ) {
-    var usersSeedFile   = path.join( process.cwd(), 'modules', 'clever-users', 'schema', 'seedData.json' )
-      , usersSeedData   = {}
-      , seedConfig      = _.clone(config[ 'clever-users' ].seedDataPromptDefaults)
-      , seedFile        = path.join( process.cwd(), 'schema', 'seedData.json' )
-      , seed            = {}
-      , foundUser       = false;
+  if (fs.existsSync(moduleSeedFile)) {
+    moduleSeedData   = require(moduleSeedFile);
+    underscore.extend(seedData, moduleSeedData);
+  }
 
-    if ( fs.existsSync( usersSeedFile ) ) {
-        usersSeedData   = require( usersSeedFile );
-        _.extend( seed, usersSeedData );
-    }
+  if (fs.existsSync(projectSeedFile)) {
+    underscore.extend(seedData, require(projectSeedFile));
+  }
 
-    if ( fs.existsSync( seedFile ) ) {
-        _.extend( seed, require( seedFile ) );
-    }
+  seedData.UserModel = seedData.UserModel || [];
 
-    seed.UserModel = seed.UserModel || [];
-
-    return [{
-        prompt: {
-            usersSeedDataPrompt: {
-                options: {
-                    questions: [
-                        {
-                            config: 'cleverusers.username',
-                            type: 'input',
-                            message: 'Default Username',
-                            default: seedConfig.username,
-                        },
-                        {
-                            type: 'confirm',
-                            config: 'cleverusers.overwrite',
-                            message: 'Overwrite existing user with the same username?',
-                            when: function( answers ) {
-                                seed.UserModel.forEach( function( user, i ) {
-                                    if ( user.username === answers[ 'cleverusers.username' ] ) {
-                                        if ( foundUser === false ) {
-                                            foundUser = [];
-                                        }
-                                        foundUser.push( i );
-                                    }
-                                });
-
-                                return foundUser !== false;
-                            }
-                        },
-                        {
-                            config: 'cleverusers.password',
-                            type: 'password',
-                            message: 'Default Users Password',
-                            default: seedConfig.password,
-                            when: function( answers ) {
-                                if ( answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true ) {
-                                    return true;
-                                } else {
-                                    grunt.fail.fatal( 'Username `' + answers[ 'cleverusers.username' ] + '` already exists in seed data and you chose not to overwrite it!' );
-                                }
-                            }
-                        },
-                        {
-                            config: 'cleverusers.email',
-                            type: 'input',
-                            message: 'Default Users Email',
-                            default: seedConfig.email
-                        },
-                        {
-                            type: 'confirm',
-                            config: 'cleverusers.overwrite',
-                            message: 'Overwrite existing user with the same email?',
-                            when: function( answers ) {
-                                if ( answers[ 'cleverusers.overwrite' ] === true ) {
-                                    return false;
-                                } else {
-                                    seed.UserModel.forEach( function( user, i ) {
-                                        if ( user.email === answers[ 'cleverusers.email' ] ) {
-                                            foundUser = i;
-                                        }
-                                    });
-
-                                    return foundUser !== false;
-                                }
-                            }
-                        },
-                        {
-                            config: 'cleverusers.firstname',
-                            type: 'input',
-                            message: 'Default Users Firstname',
-                            default: foundUser ? foundUser.firstname : ( seedConfig.firstname || '' ),
-                            when: function( answers ) {
-                                if ( answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true ) {
-                                    return true;
-                                } else {
-                                    grunt.fail.fatal( 'Email `' + answers[ 'cleverusers.email' ] + '` already exists in seed data and you chose not to overwrite it!' );
-                                }
-                            }
-                        },
-                        {
-                            config: 'cleverusers.lastname',
-                            type: 'input',
-                            message: 'Default Users Lastname',
-                            default: foundUser ? foundUser.lastname : ( seedConfig.lastname || '' ),
-                        },
-                        {
-                            config: 'cleverusers.phone',
-                            type: 'input',
-                            message: 'Default Users Phone Number',
-                            default: foundUser ? foundUser.phone : ( seedConfig.phone || '' ),
-                        },
-                        {
-                            config: 'cleverusers.hasAdminRight',
-                            type: 'confirm',
-                            message: 'Default User has admin rights'
-                        },
-                        {
-                            config: 'cleverusers.confirmed',
-                            type: 'confirm',
-                            message: 'Default User has confirmed their email'
-                        },
-                        {
-                            config: 'cleverusers.active',
-                            type: 'confirm',
-                            message: 'Default User has an active account'
-                        }
-                    ]
-                }
-            }
-        }
-    }, function( grunt ) {
-        grunt.loadNpmTasks( 'grunt-prompt' );
-        
-        grunt.registerTask( 'prompt:cleverUsersSeed', [ 'prompt:usersSeedDataPrompt', 'usersSeedData' ] );
-        grunt.registerTask( 'usersSeedData', 'Creates seed data for clever-users module', function() {
-            var conf = grunt.config( 'cleverusers' );
-
-            // Make sure the required array is there
-            seed.UserModel = seed.UserModel || [];
-
-            // Remove the user if there is a duplicate
-            if ( foundUser !== false ) {
-                foundUser.forEach( function( user ) {
-                    if (seed.UserModel[ user ].associations) {
-                        conf.associations = seed.UserModel[ user ].associations;
+  return [{
+    prompt: {
+      usersSeedDataPrompt: {
+        options: {
+          questions: [
+            {
+              config: 'cleverusers.username',
+              type: 'input',
+              message: 'Default Username',
+              default: seedDataDefaults.username,
+            },
+            {
+              type: 'confirm',
+              config: 'cleverusers.overwrite',
+              message: 'Overwrite existing user with the same username?',
+              when: function(answers) {
+                seedData.UserModel.forEach(function(user, i) {
+                  if (user.username === answers[ 'cleverusers.username' ]) {
+                    if (foundUser === false) {
+                      foundUser = [];
                     }
-                    seed.UserModel.splice( user, 1 );
+                    foundUser.push(i);
+                  }
                 });
+
+                return foundUser !== false;
+              }
+            },
+            {
+              config: 'cleverusers.password',
+              type: 'password',
+              message: 'Default Users Password',
+              default: seedDataDefaults.password,
+              when: function(answers) {
+                if (answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true) {
+                  return true;
+                } else {
+                  grunt.fail.fatal('Username `' + answers[ 'cleverusers.username' ] + '` already exists in seed data and you chose not to overwrite it!');
+                }
+              }
+            },
+            {
+              config: 'cleverusers.email',
+              type: 'input',
+              message: 'Default Users Email',
+              default: seedDataDefaults.email
+            },
+            {
+              type: 'confirm',
+              config: 'cleverusers.overwrite',
+              message: 'Overwrite existing user with the same email?',
+              when: function(answers) {
+                if (answers[ 'cleverusers.overwrite' ] === true) {
+                  return false;
+                } else {
+                  seedData.UserModel.forEach(function(user, i) {
+                    if (user.email === answers[ 'cleverusers.email' ]) {
+                      foundUser = i;
+                    }
+                  });
+
+                  return foundUser !== false;
+                }
+              }
+            },
+            {
+              config: 'cleverusers.firstName',
+              type: 'input',
+              message: 'Default Users Firstname',
+              default: foundUser ? foundUser.firstName : (seedDataDefaults.firstName || ''),
+              when: function(answers) {
+                if (answers[ 'cleverusers.overwrite' ] === undefined || answers[ 'cleverusers.overwrite' ] === true) {
+                  return true;
+                } else {
+                  grunt.fail.fatal('Email `' + answers[ 'cleverusers.email' ] + '` already exists in seed data and you chose not to overwrite it!');
+                }
+              }
+            },
+            {
+              config: 'cleverusers.lastName',
+              type: 'input',
+              message: 'Default Users Lastname',
+              default: foundUser ? foundUser.lastName : (seedDataDefaults.lastName || ''),
+            },
+            {
+              config: 'cleverusers.phone',
+              type: 'input',
+              message: 'Default Users Phone Number',
+              default: foundUser ? foundUser.phone : (seedDataDefaults.phone || ''),
+            },
+            {
+              config: 'cleverusers.hasAdminRight',
+              type: 'confirm',
+              message: 'Default User has admin rights'
+            },
+            {
+              config: 'cleverusers.confirmed',
+              type: 'confirm',
+              message: 'Default User has confirmed their email'
+            },
+            {
+              config: 'cleverusers.active',
+              type: 'confirm',
+              message: 'Default User has an active account'
             }
-            delete conf.overwrite;
+          ]
+        }
+      }
+    }
+  }, function(grunt) {
+    grunt.loadNpmTasks('grunt-prompt');
+    
+    grunt.registerTask('prompt:cleverUsersSeed', [ 'prompt:usersSeedDataPrompt', 'usersSeedData' ]);
+    grunt.registerTask('usersSeedData', 'Creates seed data for clever-users module', function() {
+      var conf = grunt.config('cleverusers');
 
-            // Update the password hash
-            conf.password = crypto.createHash( 'sha1' ).update( conf.password ).digest( 'hex' );
+      // Make sure the required array is there
+      seedData.UserModel = seedData.UserModel || [];
 
-            seed.UserModel.push( conf );
-
-            fs.writeFileSync( seedFile, JSON.stringify( seed, null, '  ' ) );
-            delete usersSeedData.UserModel;
-            fs.writeFileSync( usersSeedFile, JSON.stringify( usersSeedData, null, '  ' ) );
-
-            console.log( 'You should run `grunt db` to rebase and seed this data in your database...' );
+      // Remove the user if there is a duplicate
+      if (foundUser !== false) {
+        foundUser.forEach(function(user) {
+          if (seedData.UserModel[ user ].associations) {
+            conf.associations = seedData.UserModel[ user ].associations;
+          }
+          seedData.UserModel.splice(user, 1);
         });
-    }];
+      }
+      delete conf.overwrite;
+
+      // Update the password hash
+      conf.password = crypto.createHash('sha1').update(conf.password).digest('hex');
+
+      seedData.UserModel.push(conf);
+
+      fs.writeFileSync(projectSeedFile, JSON.stringify(seedData, null, '  '));
+      delete moduleSeedData.UserModel;
+      fs.writeFileSync(moduleSeedFile, JSON.stringify(moduleSeedData, null, '  '));
+
+      console.log('You should run `grunt db` to rebase and seed this data in your database...');
+    });
+  }];
 };

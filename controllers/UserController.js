@@ -1,9 +1,11 @@
-var crypto     = require('crypto')
-  , async      = require('async')
-  , underscore = require('underscore')
-  , passport   = require('passport');
+'use strict';
 
-module.exports = function(config, Controller, Promise, UserService, AccountController) {
+var async      = require('async')
+  , underscore = require('underscore')
+  , passport   = require('passport')
+  , util       = require('util');
+
+module.exports = function(config, Controller, Promise, UserService, AccountController, AuthController, Exceptions) {
 
   var UserController = Controller.extend({
     service: UserService,
@@ -251,7 +253,7 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
       }
 
       return promise.then(this.proxy(function(user) {
-        require('clever-auth').controllers.AuthController.authenticate.apply(this, [ null, user ]);
+        AuthController.authenticate.apply(this, [ null, user ]);
       }));
     },
 
@@ -272,14 +274,14 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
       }
 
       return promise.then(this.proxy(function(user) {
-        require('clever-auth').controllers.AuthController.updateSession.apply(this, [ user ]);
+        AuthController.updateSession.apply(this, [ user ]);
       }));
     },
 
     deleteAction: function() {
       return this._super().then(this.proxy(function() {
         if (this.req.params.id === this.req.user.id) {
-          require('clever-auth').controllers.AuthController.signOut.apply(this, arguments);
+          AuthController.signOut.apply(this, arguments);
         } else {
           this.handleServiceMessage.apply(this, arguments);
         }
@@ -343,20 +345,17 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
         } else if (data.token !== hashobj.hash) {
           reject({ statusCode: 400, message: 'Error: Invalid token.' }, 400);
         } else {
-          Promise.all([
-            EmailStateTypeModel.find({ where: { label: 'Verified' } })
-          ])
-          .then(function(states) {
-            return user.emailAddresses[0].setState(states[0]);
-          })
-          .then(this.proxy(AuthController.authenticate, null, user, function(err, user) {
-            if (!err) {
-              resolve(user);
-            } else {
-              reject(err);
-            }
-          }))
-          .catch(reject);
+          user.confirmed = true;
+          user
+            .save()
+            .then(this.proxy(AuthController.authenticate, null, user, function(err, user) {
+              if (!err) {
+                resolve(user);
+              } else {
+                reject(err);
+              }
+            }))
+            .catch(reject);
         }
       }
       .bind(this));

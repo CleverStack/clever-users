@@ -236,26 +236,25 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
   },
   {
     postAction: function () {
-      if (!!this.req.body.id) {
-        if (!this.req.params.id) {
-          this.req.params.id = this.req.body.id;
-          delete this.req.body.id;
-        }
-        return this.putAction();
+      var findOptions
+        , promise;
+
+      if (!!this.param('id')) {
+        this.action = 'putAction';
+        return this.putAction.apply(this, arguments);
       }
 
-      return UserService
-        .create(this.req.body)
-        .then(this.proxy(function(user) {
-          require('clever-auth').controllers.AuthController.authenticate.apply(this, [ null, user ]);
-        }))
-        .catch(this.proxy('handleServiceMessage'))
+      if ((findOptions = this.getOptionsForService()) && Object.keys(findOptions.where).length) {
+        promise = UserService.findOrCreate(findOptions, this.req.body, {});
+      } else {
+        promise = UserService.create(this.req.body, {});
+      }
+
+      return promise.then(this.proxy(function(user) {
+        require('clever-auth').controllers.AuthController.authenticate.apply(this, [ null, user ]);
+      }));
     },
 
-    /**
-     * Handles PUT /user or GET/PUT /user/put, this function will use the UserService to update an existing user
-     * @return {undefined}
-     */
     putAction: function () {
       var findOptions
         , promise;
@@ -266,10 +265,10 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
       }
 
       if ((findOptions = this.getOptionsForService()) && Object.keys(underscore.omit(findOptions.where, 'id')).length) {
-        promise = this.Class.service.findAndUpdate(findOptions, underscore.omit(this.req.body, 'id', 'createdAt', 'updatedAt'), {});
+        promise = UserService.findAndUpdate(findOptions, underscore.omit(this.req.body, 'id', 'createdAt', 'updatedAt'), {});
       } else {
         findOptions.where.id = this.param('id');
-        promise = this.Class.service.update(underscore.omit(this.req.body, 'id', 'createdAt', 'updatedAt'), findOptions);
+        promise = UserService.update(underscore.omit(this.req.body, 'id', 'createdAt', 'updatedAt'), findOptions);
       }
 
       return promise.then(this.proxy(function(user) {
@@ -277,205 +276,172 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
       }));
     },
 
-    /**
-     * Handles DELETE /user or GET/DELETE /user/delete, this function will use the UserService to delete an existing user
-     * @return {undefined}
-     */
     deleteAction: function() {
-      var options = { where: this.req.query };
-
-      options.where.id = this.req.params.id || this.req.query.id;
-
-      if (!!options.where._include) {
-        options.include = options.include || [];
-        options.where._include.split(',').forEach(function(include) {
-          options.include.push(models[ include ]);
-        });
-        delete options.where._include;
-      }
-
-      UserService
-        .destroy(options, this.req.body)
-        .then(this.proxy(function() {
-          if (this.req.params.id === this.req.user.id) {
-            require('clever-auth').controllers.AuthController.signOut.apply(this, arguments);
-          } else {
-            this.handleServiceMessage.apply(this, arguments);
-          }
-        }))
-        .catch(this.proxy('handleException'));
+      return this._super().then(this.proxy(function() {
+        if (this.req.params.id === this.req.user.id) {
+          require('clever-auth').controllers.AuthController.signOut.apply(this, arguments);
+        } else {
+          this.handleServiceMessage.apply(this, arguments);
+        }
+      }));
     },
 
-    recoverAction: function() {
-      if (!this.req.body.email) {
-        this.send({ message: 'missing email', statusCode: 400 }, 400);
-        return;
-      }
+    /**
+     * Handler for verifying users emails, as well as the initial "Sign-Up" userState
+     * @return {Promise}
+     */
+    verifyAction: function(req) {
+      var data   = req.query
+        , userId = req.params.user_id;
 
       UserService
-        .find({ where: { email: this.req.body.email } })
+      .find({ where: { id: userId } })
+      .then(this.proxy('handleVerify', data))
+      .then(this.proxy(function(user) {
+        this.res.redirect(util.format('/auth/user/%d/', user.id));
+      }))
+      .catch(this.proxy('handleServiceMessage'));
+    },
+
+    /**
+     * Helper function for the verifyAction, here we check the validity of the link provided (token) as well
+     * as making sure the user hasn't already verified this email address before
+     * 
+     * @param  {RequestParams} data the request params as prepared by verifyAction
+     * @param  {UserModel}     user the model for the user requesting to verify
+     * @return {Promise}
+     */
+    handleVerify: function(data, user) {
+      return new Promise(function(resolve, reject) {
+        if (!user) {
+          reject({ statusCode: 403, message: 'Error: Invalid link.' }, 403);
+        } else if (!!user.verified) {
+          reject(new Exceptions.AlreadyVerified({ statusCode: 400, message: 'Error: You have already activated your email address.' }));
+        } else {
+          return UserService.generatePasswordResetHash(data, user, 'email-verification')
+            .then(this.proxy("verifyEmail", data, user))
+            .then(resolve)
+            .catch(reject);
+        }
+      }
+      .bind(this));
+    },
+
+    /**
+     * Helper function for the verifyAction, and this function is called directly after handleVerify and 
+     * here we check the validity of the provided token, then update the emailState and userState as required.
+     * 
+     * @param  {RequestParams} data    the request params as prepared by verifyAction
+     * @param  {UserModel}     user    the model for the user requesting to verify
+     * @param  {String}        hashobj the generated token based hash to compare
+     * @return {Promise}
+     */
+    verifyEmail: function(data, user, hashobj) {
+      return new Promise(function(resolve, reject) {
+        if (!hashobj.hash && hashobj.statuscode) {
+          reject(hashobj);
+        } else if (data.token !== hashobj.hash) {
+          reject({ statusCode: 400, message: 'Error: Invalid token.' }, 400);
+        } else {
+          Promise.all([
+            EmailStateTypeModel.find({ where: { label: 'Verified' } })
+          ])
+          .then(function(states) {
+            return user.emailAddresses[0].setState(states[0]);
+          })
+          .then(this.proxy(AuthController.authenticate, null, user, function(err, user) {
+            if (!err) {
+              resolve(user);
+            } else {
+              reject(err);
+            }
+          }))
+          .catch(reject);
+        }
+      }
+      .bind(this));
+    },
+
+    /**
+     * Handler function to resend the user's email verification requests, in case they had not recieved
+     * them in their inbox, this function is also called after postAction() to send the inital verification email.
+     * 
+     * @param  {Request} req the incoming request
+     * @return {Promise}
+     */
+    resendAction: function(req) {
+      return UserService.resendConfirmationEmail(
+        req.user ? req.user.id : null,
+        req.params.user_id,
+        req.body.email || req.query.email
+      );
+    },
+
+    /**
+     * Handler function to send a password recovery email to the user, in case they have fogotten it.
+     * 
+     * @param  {Request} req the incoming request
+     * @return {Promise}
+     */
+    forgottenPasswordAction: function(req) {
+      return UserService.sendRecoveryEmail(
+        req.user ? req.user.id : null,
+        req.params.user_id,
+        req.body.email || req.query.email
+      ).then(function() {
+        return {
+          statusCode: 200,
+          message: util.format("An email has been sent to %s.", req.params.email)
+        }
+      })
+    },
+
+    /**
+     * Handler function to reset a users password after receiving a password recovery email,
+     * after updating the users password we need to authenticate the user.
+     * 
+     * @param  {Request} req the incoming request
+     * @return {Promise}
+     */
+    resetPasswordAction: function(req) {
+      var userId      = req.params.user_id
+        , password    = req.body.password || req.query.password
+        , token       = req.body.token || req.query.token
+        , email       = req.query.email || req.body.email;
+
+      return new Promise(function(resolve, reject) {
+        if (!password) {
+          return reject(new Exceptions.InvalidData('Please enter your new password.'));
+        }
+
+        UserService.find({
+          where: {
+            id: userId
+          }
+        })
         .then(function(user) {
-          return UserService.generatePasswordResetHash(user);
+          return UserService.generatePasswordResetHash({email: email}, user);
         })
         .then(function(recoveryData) {
-          return UserService.mailPasswordRecoveryToken(recoveryData);
-        })
-        .then(this.proxy('handleServiceMessage'))
-        .catch(this.proxy('handleServiceMessage'));
-    },
-
-    resetAction: function() {
-      var userId      = this.req.body.userId || this.req.body.user,
-        password    = this.req.body.password,
-        token       = this.req.body.token;
-
-      UserService
-      .findById(userId)
-      .then(function(user) {
-        return UserService.generatePasswordResetHash(user, {});
-      })
-      .then(function(resetData) {
-        console.dir(token);
-        console.dir(resetData);
-        process.exit();
-        if (token != resetData.hash) {
-          return this.send('Invalid token', 400);
-        }
-
-        this.handleUpdatePassword(newPassword, [user]);
-      })
-      .catch(this.proxy('handleServiceMessage'));
-
-    },
-
-    handlePasswordReset: function(password, token, user) {
-      if (!user) {
-        this.send({}, 403);
-        return;
-      }
-
-      UserService
-        .generatePasswordResetHash(user)
-        .then(this.proxy('verifyResetTokenValidity', user, password, token))
-        .catch(this.proxy('handleException'));
-
-    },
-
-    verifyResetTokenValidity: function(user, newPassword, token, resetData) {
-      
-
-    },
-
-    handleUpdatePassword: function(newPassword, user) {
-
-      if (user.length) {
-        user = user[0];
-        user.updateAttributes({
-          password: crypto.createHash('sha1').update(newPassword).digest('hex')
-        }).then(function (user) {
-            this.send({status: 200, results: user});
-          }.bind(this)
-         ).catch(this.proxy('handleException'));
-      } else {
-        this.send({status: 400, error: "Incorrect old password!"});
-      }
-    },
-
-    confirmAction: function() {
-      var password    = this.req.body.password
-        , token       = this.req.body.token
-        , userId      = this.req.params.id;
-
-      UserService
-        .find({ where: { id: userId } })
-        .then(this.proxy('handleAccountConfirmation', password, token))
-        .catch(this.proxy('handleException'));
-
-    },
-
-    handleAccountConfirmation: function(pass, token, user) {
-      if (!user) {
-        this.send('Invalid confirmation link', 403);
-        this.send({ statusCode: 403, message: 'Error: Invalid confirmation link.' }, 403);
-
-        return;
-      }
-      if (user.confirmed) {
-        this.send({ statusCode: 400, message: 'Error: You have already activated your account.' }, 400);
-        return;
-      }
-
-      UserService.generatePasswordResetHash(user)
-        .then(this.proxy("confirmAccount", user, pass, token))
-        .catch(this.proxy("handleException"));
-
-    },
-
-    confirmAccount: function(user, pass, token, hashobj) {
-      if (!hashobj.hash && hashobj.statuscode) {
-        this.handleServiceMessage(hashobj);
-        return;
-      }
-
-      if (token !== hashobj.hash) {
-        this.send({ statusCode: 400, message: 'Error: Invalid token.' }, 400);
-        return;
-      }
-
-      user.confirmed = true;
-
-      if (pass) {
-        user.password = crypto.createHash('sha1').update(pass).digest('hex');
-      }
-
-      var queryOptions = {};
-      UserService
-      .transaction(queryOptions)
-      .then(function() {
-        return user.save(queryOptions);
-      })
-      .then(function(user) {
-        return new Promise(function(resolve) {
-          if (queryOptions.transaction) {
-            queryOptions.transaction.commit().done(function() {
-              resolve(user);
-            });
+          if(recoveryData.hash !== token) {
+            return reject({ statusCode: 400, message: 'Error: Invalid token.' }, 400);
           } else {
-            resolve(user);
+            recoveryData.user.hashPassword(password);
+
+            recoveryData.user.save().then(this.proxy( AuthController.authenticate, null, recoveryData.user, function(err, results) {
+              if (!err) {
+                resolve(results);
+              } else {
+                reject(err);
+              }
+            }));
           }
-        });
-      })
-      .then(this.proxy(function(user) {
-        require('clever-auth').controllers.AuthController.authenticate.apply(this, [ null, user ]);
-      }))
-      .catch(function(err) {
-
-        if (queryOptions.transaction) {
-          queryOptions.transaction.rollback();
-        }
-        this.handleServiceMessage(err);
-
-      }.bind(this));
-    },
-
-    resendAction: function() {
-      var me      = this.req.user
-        , userId  = this.req.params.id;
-
-      var tplData = {
-        firstName: this.req.user.firstname,
-        accountSubdomain: this.req.user.Account.subdomain,
-        userFirstName: '',
-        userEmail: '',
-        tplTitle: 'Account Confirmation',
-        subject: this.req.user.firstname + ' wants to add you to their team!'
-      };
-
-      UserService
-        .resendAccountConfirmation(me.account.id, userId, tplData)
-        .then(this.proxy('handleServiceMessage'))
-        .then(this.proxy('handleException'));
+        }.bind(this))
+        .catch(reject);
+      }
+      .bind(this));
     }
+
   });
 
   passport.serializeUser(UserController.callback('serializeUser'));

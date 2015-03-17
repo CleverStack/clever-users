@@ -1,22 +1,30 @@
 {
-  "name":        "clever-users",
-  "description": "CleverStack Users Module",
-  "version":     "1.2.0",
-  "main":        "module.js",
+  "name"        : "clever-users",
+  "description" : "CleverStack Users Module",
+  "version"     : "1.2.1",
+  "license"     : "MIT",
+  "main"        : "module",
   "author": {
-    "name":      "CleverStack",
-    "email":     "admin@cleverstack.io",
-    "web":       "http://cleverstack.io"
+    "name"      : "CleverStack",
+    "email"     : "admin@cleverstack.io",
+    "web"       : "http://cleverstack.io"
   },
   "collaborators": [
     "Richard Gustin <richard.gustin86@gmail.com>"
   ],
   "repository": {
-    "type":      "git",
-    "url":       "https://github.com/CleverStack/clever-users.git"
+    "type"      : "git",
+    "url"       : "https://github.com/CleverStack/clever-users.git"
   },
   "bugs": {
-    "url":       "https://github.com/CleverStack/clever-users/issues"
+    "url"       : "https://github.com/CleverStack/clever-users/issues"
+  },
+  "scripts": {
+    "test"      : "grunt test:unit"
+  },
+  "devDependencies": {
+    "grunt"           : "~0.4.2",
+    "grunt-prompt"    : "~1.3.0"
   },
   "keywords": [
     "cleverstack",
@@ -29,16 +37,5 @@
     "permissions",
     "passport",
     "auth"
-  ],
-  "license":     "MIT",
-  "dependencies": {
-
-  },
-  "devDependencies": {
-    "grunt":        "~0.4.2",
-    "grunt-prompt": "~1.3.0"
-  },
-  "scripts": {
-    "test":      "grunt test:unit"
-  }
+  ]
 }

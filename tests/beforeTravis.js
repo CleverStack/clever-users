@@ -313,6 +313,41 @@ function installAccountsModule() {
   });
 }
 
+function installRolesModule() {
+  step++;
+  return new Promise(function(resolve, reject) {
+    var objs = []
+      , proc = spawn('clever', [ 'install', 'clever-roles' ], { cwd: path.join(__dirname, '../', prName) });
+
+    console.log('step #' + step + ' - install clever-roles module - begin\n');
+
+    proc.stdout.on('data', function(data) {
+      var str = data.toString();
+
+      if (str.match(/ing/) !== null) {
+        console.log(str);
+      }
+
+      objs.forEach (function (obj, i) {
+        if (obj.done !== true && str.match(obj.reg) !== null) {
+          objs[i].done = true;
+          proc.stdin.write(obj.write);
+        }
+      });
+    });
+
+    proc.stderr.on('data', function(data) {
+      console.log('Error in step #' + step + ' - ' + data.toString() + '\n');
+      reject (data.toString());
+    });
+
+    proc.on('close', function(code) {
+      console.log('step #' + step + ' process exited with code ' + code + '\n');
+      resolve();
+    });
+  });
+}
+
 function rebaseDb() {
   step++;
   return new Promise(function(resolve, reject) {
@@ -341,6 +376,7 @@ createProject()
   .then(installTestModule)
   .then(installAuthModule)
   .then(installAccountsModule)
+  .then(installRolesModule)
   .then(copyUsersModule)
   .then(installUsersModule)
   .then(cleverSetup)

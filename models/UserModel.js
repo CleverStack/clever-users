@@ -1,7 +1,7 @@
 module.exports = function(Model, config) {
   return Model.extend('User',
   {
-    type: config['clever-users'].driver || 'ORM',
+    type            : config['clever-users'].driver || 'ORM',
     softDeletable   : true,
     timeStampable   : true
   },

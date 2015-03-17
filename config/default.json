@@ -1,6 +1,6 @@
 {
   "clever-users": {
-    "driver": "ORM",
+    "driver"          : "ORM",
     
     "emailConfirmation": false,
 

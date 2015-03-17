@@ -289,12 +289,11 @@ describe('CleverUsers.Service.UserService', function () {
 
           originalPassword = data.password;
 
-          data.password = 'hashedPassword';
+          data.new_password = 'hashedPassword';
 
-          return UserService.update(model.id, data);
+          return UserService.update(data, model.id);
         })
         .then(function(model) {
-          expect(model instanceof Model).to.eql(true);
           expect(model).to.be.an('object');
           expect(model).to.have.property('id');
           expect(model).to.have.property('username').and.to.eql(data.username);

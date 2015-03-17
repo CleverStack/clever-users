@@ -139,37 +139,6 @@ function copyAuthModule () {
   });
 }
 
-function addAuthToBundled() {
-  return new Promise( function( resolve, reject ) {
-    var file = path.join( __dirname, '../', prName, 'package.json' );
-
-    console.log( 'step #4 - added clever-auth module in bundledDependencies\n' );
-
-    fs.readFile ( file, function ( err, data ) {
-
-      if ( err ) {
-        console.log( 'Error in step #4 - ' + err + '\n');
-        return reject ( err );
-      }
-
-      data = JSON.parse ( data );
-
-      data.bundledDependencies.push ( 'clever-auth' );
-
-      fs.writeFile ( file, JSON.stringify ( data, null, '  ' ), function ( err ) {
-
-        if ( err ) {
-          console.log( 'Error in step #4 - ' + err + '\n');
-          return reject ( err );
-        }
-
-        console.log('step #4 process exited with code 0\n' );
-        resolve();
-      });
-    });
-  });
-}
-
 function setupAuthModule() {
   return new Promise( function( resolve, reject ) {
     var proc = spawn( 'clever', [ 'setup' ], { cwd: path.join( __dirname, '../', prName ) } );
@@ -293,7 +262,6 @@ function rebaseDb() {
 createProject() 
   .then( installORM )
   .then( copyAuthModule )
-  .then( addAuthToBundled )
   .then( setupAuthModule )
   .then( configureAuthModule )
   .then( seedDataForAuthModule )

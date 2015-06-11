@@ -245,14 +245,14 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
       }
 
       if ((findOptions = this.getOptionsForService()) && Object.keys(findOptions.where).length) {
-        promise = UserService.findOrCreate(findOptions, this.req.body, {});
+        promise = UserService.findOrCreate(findOptions, {
+          defaults: this.req.body
+        });
       } else {
         promise = UserService.create(this.req.body, {});
       }
 
-      return promise.then(this.proxy(function(user) {
-        AuthController.authenticate.apply(this, [ null, user ]);
-      }));
+      promise.then(this.proxy(AuthController.authenticate, null)).catch(this.proxy('handleServiceMessage'));
     },
 
     putAction: function () {
@@ -271,13 +271,11 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
         promise = UserService.update(underscore.omit(this.req.body, 'id', 'createdAt', 'updatedAt'), findOptions);
       }
 
-      return promise.then(this.proxy(function(user) {
-        AuthController.updateSession.apply(this, [ user ]);
-      }));
+      promise.then(this.proxy(AuthController.updateSession)).catch(this.proxy('handleServiceMessage'));
     },
 
     deleteAction: function() {
-      return this._super().then(this.proxy(function() {
+      this._super().then(this.proxy(function() {
         if (this.req.params.id === this.req.user.id) {
           AuthController.signOut.apply(this, arguments);
         } else {
@@ -291,15 +289,15 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
      * @return {Promise}
      */
     verifyAction: function(req) {
-      var data   = req.query
-        , userId = req.params.user_id;
+      var data   = req.body
+        , userId = req.params.id;
 
-      UserService
+      return UserService
       .find({ where: { id: userId } })
       .then(this.proxy('handleVerify', data))
-      .then(this.proxy(function(user) {
-        this.res.redirect(util.format('/auth/user/%d/', user.id));
-      }))
+      // .then(this.proxy(function(user) {
+      //   this.res.redirect(util.format('/auth/user/%d/', user.id));
+      // }))
       .catch(this.proxy('handleServiceMessage'));
     },
 
@@ -318,7 +316,7 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
         } else if (!!user.verified) {
           reject(new Exceptions.AlreadyVerified({ statusCode: 400, message: 'Error: You have already activated your email address.' }));
         } else {
-          return UserService.generatePasswordResetHash(data, user, 'email-verification')
+          return UserService.generatePasswordResetHash(user, data)
             .then(this.proxy("verifyEmail", data, user))
             .then(resolve)
             .catch(reject);
@@ -369,7 +367,7 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
     resendAction: function(req) {
       return UserService.resendConfirmationEmail(
         req.user ? req.user.id : null,
-        req.params.user_id,
+        req.params.id,
         req.body.email || req.query.email
       );
     },
@@ -380,15 +378,13 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
      * @param  {Request} req the incoming request
      * @return {Promise}
      */
-    forgottenPasswordAction: function(req) {
+    recoverAction: function(req) {
       return UserService.sendRecoveryEmail(
-        req.user ? req.user.id : null,
-        req.params.user_id,
         req.body.email || req.query.email
       ).then(function() {
         return {
           statusCode: 200,
-          message: util.format("An email has been sent to %s.", req.params.email)
+          message: util.format("An email has been sent to %s.", req.body.email || req.query.email)
         }
       })
     },
@@ -401,10 +397,9 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
      * @return {Promise}
      */
     resetPasswordAction: function(req) {
-      var userId      = req.params.user_id
+      var userId      = req.body.id || req.body.user ||req.query.user
         , password    = req.body.password || req.query.password
-        , token       = req.body.token || req.query.token
-        , email       = req.query.email || req.body.email;
+        , token       = req.body.token || req.body.t || req.query.token || req.query.t;
 
       return new Promise(function(resolve, reject) {
         if (!password) {
@@ -417,7 +412,7 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
           }
         })
         .then(function(user) {
-          return UserService.generatePasswordResetHash({email: email}, user);
+          return UserService.generatePasswordResetHash(user, {});
         })
         .then(function(recoveryData) {
           if(recoveryData.hash !== token) {
@@ -438,7 +433,6 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
       }
       .bind(this));
     }
-
   });
 
   passport.serializeUser(UserController.callback('serializeUser'));

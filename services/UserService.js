@@ -8,11 +8,11 @@ var crypto      = require('crypto')
 
 module.exports = function(Service, UserModel, Exceptions) {
   return Service.extend({
+
     model: UserModel,
 
     create: function(data, options) {
-      var create = this._super
-        , that   = this;
+      var create = this._super;
 
       options = options || {};
 
@@ -43,27 +43,27 @@ module.exports = function(Service, UserModel, Exceptions) {
 
               var unconfirmedUser;
 
-              create
-              .apply(that, [data, options])
-              .then(function(usr) {
-                unconfirmedUser = usr;
-                return that.generatePasswordResetHash(usr, tplData);
-              })
-              .then(that.mailPasswordRecoveryToken)
-              .then(function() {
-                resolve(unconfirmedUser);
-              })
-              .catch(reject);
+              create.apply(this, [data, options])
+                .then(this.proxy(function(usr) {
+                  unconfirmedUser = usr;
+                  return this.generatePasswordResetHash(usr, tplData);
+                }))
+                .then(this.proxy('mailPasswordRecoveryToken'))
+                .then(function() {
+                  resolve(unconfirmedUser);
+                })
+                .catch(reject);
               
             } else {
-              create.apply(that, [data, options])
+              create.apply(this, [data, options])
                 .then(resolve)
                 .catch(reject);
             }
-          })
+          }.bind(this))
           .catch(reject);
 
-      });
+      }
+      .bind(this));
     },
 
     update: function(data, options) {
@@ -113,7 +113,7 @@ module.exports = function(Service, UserModel, Exceptions) {
           expTime     : moment.utc().add('hours', 8).valueOf(),
           tpl         : !user.confirmed ? 'newUser.ejs' : 'passwordRecovery.ejs',
           action      : !user.confirmed ? 'account/confirm' : 'resetPassword',
-          subject     : !user.confirmed ? 'User Confirmation' : 'Password Recovery',
+          subject     : !user.confirmed ? 'CleverStack User Confirmation' : 'Password Recovery',
           user        : user,
 
           tplData     : tplData || {}
@@ -121,8 +121,34 @@ module.exports = function(Service, UserModel, Exceptions) {
       });
     },
 
-    mailPasswordRecoveryToken: function (recoveryData) {
-      var url             = config['clever-auth'].appUrl
+    sendRecoveryEmail: function(email) {
+      return new Promise(function(resolve, reject) {
+        if (!email) {
+          return reject(new Exceptions.InvalidData('You must provide your email address'));
+        }
+
+        UserModel
+        .findByEmail(email)
+        .then(this.proxy(function(user) {
+          if (!user) {
+            return reject(new Exceptions.ModelNotFound("User doesn't exist"));
+          }
+
+          user.failedPasswordAttempts = 0;
+          return user.save();
+        }))
+        .then(this.proxy(function(user) {
+          return this.generatePasswordResetHash(user);
+        }))
+        .then(this.proxy('mailPasswordRecoveryToken'))
+        .then(resolve)
+        .catch(reject);
+      }
+      .bind(this));
+    },
+
+    mailPasswordRecoveryToken: function(recoveryData) {
+      var url             = config['clever-users'].appUrl
         , link            = url + '/' + recoveryData.action + '?u=' + recoveryData.user.id + '&t=' + recoveryData.hash + '&n=' + encodeURIComponent(recoveryData.user.fullName)
         , payload         = { to: recoveryData.user.email }
 
@@ -145,7 +171,7 @@ module.exports = function(Service, UserModel, Exceptions) {
       templateData.user           = recoveryData.user;
 
       return new Promise(function(resolve, reject) {
-        ejsRenderer('modules/clever-auth/templates/email/' + recoveryData.tpl, templateData)
+        ejsRenderer('modules/clever-users/views/' + recoveryData.tpl, templateData)
           .then(function(html) {
             payload.html = html;
             return mailer.send(payload);
@@ -173,7 +199,7 @@ module.exports = function(Service, UserModel, Exceptions) {
               return;
             }
 
-            tplData.userFirstName = user.firstname;
+            tplData.userFirstName = user.firstName;
             tplData.userEmail = user.email;
 
             service.generatePasswordResetHash(user, tplData)

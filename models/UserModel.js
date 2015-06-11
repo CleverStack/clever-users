@@ -1,9 +1,11 @@
+var crypto     = require('crypto');
+
 module.exports = function(Model, config) {
-  return Model.extend('User',
+  return Model.extend( 'User',
   {
     type            : config['clever-users'].driver || 'ORM',
-    softDeletable   : true,
-    timeStampable   : true
+    timeStampable   : true,
+    softDeleteable  : true
   },
   {
     id: {
@@ -11,16 +13,16 @@ module.exports = function(Model, config) {
       primaryKey    : true,
       autoIncrement : true
     },
-    title           : String,
+    // title           : String,
     username: {
       type          : String,
-      length        : 191,
+      length        : 255,
       unique        : true,
       required      : true
     },
     email: {
       type          : String,
-      length        : 191,
+      length        : 255,
       unique        : true,
       required      : true,
       validate: {
@@ -45,12 +47,26 @@ module.exports = function(Model, config) {
     },
     accessedAt      : Date,
 
+    getHashToken: function() {
+      this.debug('Getting a reset token (Hash)');
+      return crypto.createHash('md5').update(this.createdAt + this.updatedAt + this.password + this.email + 'recover', 'utf8').digest('hex');
+    },
+
     /**
-     * Virtual Getter, will be outputted to JSON as "fullName"
-     * @return {String} the users firstName and lastName combined as "fullName"
+     * This function will hash the provided "password" and save it on this model
+     * 
+     * @param  {String} password The unhashed password the user is setting
+     * @return {void}
      */
-    getFullName: function() {
-      return this.firstName + ' ' + this.lastName;
+    hashPassword: function(password) {
+      this.debug('Hashing users password');
+      this.password = crypto.createHash('sha1').update(password).digest('hex');
+    },
+
+    toJSON: function() {
+      var user = this._super();
+      user.fullName = user.firstName + ' ' + user.lastName;
+      return user;
     }
-  })
-}
+  });
+};

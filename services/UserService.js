@@ -153,20 +153,24 @@ module.exports = function(Service, UserModel, Exceptions) {
         , payload         = { to: recoveryData.user.email }
 
       payload.to          = recoveryData.user.email;
-      payload.from        = 'no-reply@cleverstack.com';
-      payload.fromname    = 'CleverStack' + '-' + (process.env.NODE_ENV || 'LOCAL');
-      payload.text        = (recoveryData.tplData.action === 'account/confirm') ? "Please click on the link below to activate your account\n " + link : "Please click on the link below to enter a new password\n " + link;
+      payload.from        = 'account@charmux.com';
+      payload.fromname    = 'Charm UX';
+      payload.text        = ( recoveryData.tplData.action === 'account/confirm' ) ? "Please click on the link below to activate your account\n " + link : "Please click on the link below to enter a new password\n " + link;
       payload.subject     = recoveryData.subject;
 
       var templateData = {
         link            : link,
-        companyLogo     : 'http://dev.cleverstack.com/images/logobig.png',
-        companyName     : 'CleverStack',
+        companyLogo     : 'https://app.charmux.com/images/1266e831.Charm-UX-app-logo.png',
+        companyName     : 'Charm UX',
         subject         : recoveryData.subject,
-        tplTitle        : recoveryData.tplData.tplTitle || 'Password Recovery'
+        tplTitle        : recoveryData.tplData.tplTitle || 'Password Recovery',
+        firstName       : recoveryData.user.firstName,
+        lastName        : recoveryData.user.lastName,
+        email           : recoveryData.user.email,
+        user            : recoveryData.user
       };
 
-      templateData.firstname      = recoveryData.user.firstname;
+      templateData.firstName      = recoveryData.user.firstName;
       templateData.email          = recoveryData.user.email;
       templateData.user           = recoveryData.user;
 
@@ -176,8 +180,29 @@ module.exports = function(Service, UserModel, Exceptions) {
             payload.html = html;
             return mailer.send(payload);
           })
+          .then(function() {
+            if (!recoveryData.user.confirmed) {
+              return this.emailAdminWhenNewUser(templateData);
+            } else {
+              resolve();
+            }
+          }.bind(this))
           .then(resolve)
           .catch(reject);
+      }
+      .bind(this));
+    },
+
+    emailAdminWhenNewUser: function(user) {
+      return new Promise( function( resolve, reject ) {
+        var adminPayload = {
+          to          : 'account@charmux.com',
+          from        : 'account@charmux.com',
+          fromname    : 'CharmUX Alert',
+          text        : 'A new user registered: ' + user.firstName + ' ' + user.lastName,
+          subject     : 'CharmUX new user: ' + user.email + ' ' + user.firstName + ' ' + user.lastName
+        };
+        mailer.send(adminPayload).then(resolve).catch(reject);
       });
     },
 

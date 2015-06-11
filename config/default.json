@@ -2,7 +2,7 @@
   "clever-users": {
     "driver"          : "ORM",
     
-    "emailConfirmation": false,
+    "emailConfirmation": true,
 
     "requiresLogin": {
       "all"           : true,

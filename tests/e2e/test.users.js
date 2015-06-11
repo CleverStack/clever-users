@@ -408,8 +408,8 @@
 //                 username    : 'newuser234',
 //                 email       :  authUser.email,
 //                 password    : '123',
-//                 firstname   : 'newusername234',
-//                 lastname    : 'newusername324',
+//                 firstName   : 'newusername234',
+//                 lastName    : 'newusername324',
 //             };
 
 //             request(app)
@@ -434,8 +434,8 @@
 //                 username    : 'newuser243@email.com',
 //                 email       : 'newuser243@email.com',
 //                 password    : '123',
-//                 firstname   : 'newusername234',
-//                 lastname    : 'newusername324',
+//                 firstName   : 'newusername234',
+//                 lastName    : 'newusername324',
 //             };
 
 //             request(app)
@@ -451,8 +451,8 @@
 //                 res.body.should.be.a( 'object' );
 //                 res.body.should.have.property( 'id' );
 //                 res.body.should.have.property( 'username' ).and.equal( newuser.username );
-//                 res.body.should.have.property( 'firstname' ).and.equal( newuser.firstname );
-//                 res.body.should.have.property( 'fullName' ).and.equal( newuser.firstname +' '+newuser.lastname );
+//                 res.body.should.have.property( 'firstName' ).and.equal( newuser.firstName );
+//                 res.body.should.have.property( 'fullName' ).and.equal( newuser.firstName +' '+newuser.lastName );
 //                 done();
 //             });
 
@@ -580,7 +580,7 @@
 //              request(app)
 //                 .post('/users/'+2)
 //                 .set('cookie', cookie)
-//                 .send( { firstname : "updatedName" } )
+//                 .send( { firstName : "updatedName" } )
 //                 .end(function(err,res){
 //                     should.not.exist(err);
 
@@ -597,7 +597,7 @@
 //              request(app)
 //                 .post('/users/'+2)
 //                 .set('cookie', cookie)
-//                 .send( { id: 2, firstname : "updatedName" } )
+//                 .send( { id: 2, firstName : "updatedName" } )
 //                 .end(function(err,res){
 //                     should.not.exist(err);
 
@@ -606,7 +606,7 @@
 //                     res.should.have.header('content-type','application/json');
 
 //                     res.body.should.be.a( 'object' ).and.have.property( 'id' ).and.equal( 2 );
-//                     res.body.firstname.should.equal( "updatedName" );
+//                     res.body.firstName.should.equal( "updatedName" );
 //                     done();
 //                 });
 //         });
@@ -616,7 +616,7 @@
 //              request(app)
 //                 .post('/users/'+4)
 //                 .set('cookie', cookie)
-//                 .send( { firstname : "updatedName" } )
+//                 .send( { firstName : "updatedName" } )
 //                 .end(function(err,res){
 //                     should.not.exist(err);
 
@@ -630,7 +630,7 @@
 
 //         it('should return status 500 if user with such id does not exist', function( done ){
 
-//             var dataToUpdate = { id:'someid',firstname: 'updatedname' } ;
+//             var dataToUpdate = { id:'someid',firstName: 'updatedname' } ;
 
 //             request(app)
 //             .post('/users/'+'invalidid')
@@ -792,8 +792,8 @@
 //                 username    : 'newuser24355@email.com',
 //                 email       : 'newuser24355@email.com',
 //                 password    : '123',
-//                 firstname   : 'newusername2345',
-//                 lastname    : 'newusername3245',
+//                 firstName   : 'newusername2345',
+//                 lastName    : 'newusername3245',
 //             })
 //             .end(function(err,res){
 //                 should.not.exist(err);

@@ -110,9 +110,9 @@ module.exports = function(Service, Promise, Exceptions, config, utils, UserModel
         resolve({
           hash        : md5.digest('hex'),
           expTime     : moment.utc().add('hours', 8).valueOf(),
-          tpl         : emailConfig.email.template[type],
+          tpl         : emailConfig.template[type],
           action      : !user.confirmed ? 'account/confirm' : 'resetPassword',
-          subject     : emailConfig.email.subject[type],
+          subject     : emailConfig.subject[type],
           user        : user,
 
           tplData     : tplData || {}

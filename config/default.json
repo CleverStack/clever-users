@@ -4,6 +4,14 @@
     
     "emailConfirmation": true,
 
+    "email": {
+      "appUrl": "http://localhost:9000",
+      "fromName": "CleverStack",
+      "fromEmail": "no-reply@cleverstack.io",
+      "companyName": "CleverStack",
+      "companyLogo": "http://localhost:9000/images/logobig.png"
+    },
+
     "requiresLogin": {
       "all"           : true,
       "postAction"    : false,

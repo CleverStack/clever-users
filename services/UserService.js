@@ -1,12 +1,10 @@
-var crypto      = require('crypto')
-  , Promise     = require('bluebird')
-  , moment      = require('moment')
-  , config      = require('config')
-  , utils       = require('utils')
-  , ejsRenderer = utils.ejsRenderer
-  , mailer      = utils.mailer;
+module.exports = function(Service, Promise, Exceptions, config, utils, UserModel) {
+  var crypto      = require('crypto')
+    , moment      = require('moment')
+    , ejsRenderer = utils.ejsRenderer
+    , mailer      = utils.mailer
+    , emailConfig = config['clever-users'].email;
 
-module.exports = function(Service, UserModel, Exceptions) {
   return Service.extend({
 
     model: UserModel,
@@ -148,61 +146,37 @@ module.exports = function(Service, UserModel, Exceptions) {
     },
 
     mailPasswordRecoveryToken: function(recoveryData) {
-      var url             = config['clever-users'].appUrl
-        , link            = url + '/' + recoveryData.action + '?u=' + recoveryData.user.id + '&t=' + recoveryData.hash + '&n=' + encodeURIComponent(recoveryData.user.fullName)
-        , payload         = { to: recoveryData.user.email }
-
-      payload.to          = recoveryData.user.email;
-      payload.from        = 'account@charmux.com';
-      payload.fromname    = 'Charm UX';
-      payload.text        = ( recoveryData.tplData.action === 'account/confirm' ) ? "Please click on the link below to activate your account\n " + link : "Please click on the link below to enter a new password\n " + link;
-      payload.subject     = recoveryData.subject;
-
-      var templateData = {
-        link            : link,
-        companyLogo     : 'https://app.charmux.com/images/1266e831.Charm-UX-app-logo.png',
-        companyName     : 'Charm UX',
-        subject         : recoveryData.subject,
-        tplTitle        : recoveryData.tplData.tplTitle || 'Password Recovery',
-        firstName       : recoveryData.user.firstName,
-        lastName        : recoveryData.user.lastName,
-        email           : recoveryData.user.email,
-        user            : recoveryData.user
+      var payload = {
+        to       : recoveryData.user.email,
+        from     : emailConfig.fromEmail,
+        fromname : emailConfig.fromName,
+        subject  : recoveryData.subject
       };
 
-      templateData.firstName      = recoveryData.user.firstName;
-      templateData.email          = recoveryData.user.email;
-      templateData.user           = recoveryData.user;
-
-      return new Promise(function(resolve, reject) {
-        ejsRenderer('modules/clever-users/views/' + recoveryData.tpl, templateData)
-          .then(function(html) {
-            payload.html = html;
-            return mailer.send(payload);
-          })
-          .then(function() {
-            if (!recoveryData.user.confirmed) {
-              return this.emailAdminWhenNewUser(templateData);
-            } else {
-              resolve();
-            }
-          }.bind(this))
-          .then(resolve)
-          .catch(reject);
+      var link = emailConfig.appUrl + '/' + recoveryData.action + '?u=' + recoveryData.user.id + '&t=' + recoveryData.hash + '&n=' + encodeURIComponent(recoveryData.user.fullName)
+      if (recoveryData.tplData.action === 'account/confirm') {
+        payload.text = "Please click on the link below to activate your account\n " + link;
+      } else {
+        payload.text = "Please click on the link below to enter a new password\n " + link;
       }
-      .bind(this));
-    },
 
-    emailAdminWhenNewUser: function(user) {
-      return new Promise( function( resolve, reject ) {
-        var adminPayload = {
-          to          : 'account@charmux.com',
-          from        : 'account@charmux.com',
-          fromname    : 'CharmUX Alert',
-          text        : 'A new user registered: ' + user.firstName + ' ' + user.lastName,
-          subject     : 'CharmUX new user: ' + user.email + ' ' + user.firstName + ' ' + user.lastName
-        };
-        mailer.send(adminPayload).then(resolve).catch(reject);
+      var templateData = {
+        link        : link,
+        companyLogo : emailConfig.companyLogo,
+        companyName : emailConfig.companyName,
+        subject     : recoveryData.subject,
+        tplTitle    : recoveryData.tplData.tplTitle || 'Password Recovery',
+        firstName   : recoveryData.user.firstName,
+        lastName    : recoveryData.user.lastName,
+        email       : recoveryData.user.email,
+        user        : recoveryData.user
+      };
+
+      var templatePath = 'modules/clever-users/views/' + recoveryData.tpl;
+
+      return ejsRenderer(templatePath, templateData).then(function(html) {
+        payload.html = html;
+        return mailer.send(payload);
       });
     },
 

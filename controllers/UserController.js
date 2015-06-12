@@ -271,7 +271,16 @@ module.exports = function(config, Controller, Promise, UserService, AccountContr
         promise = UserService.update(underscore.omit(this.req.body, 'id', 'createdAt', 'updatedAt'), findOptions);
       }
 
-      promise.then(this.proxy(AuthController.updateSession)).catch(this.proxy('handleServiceMessage'));
+      promise
+      .then(function(user) {
+        return UserService.find({
+          where: {
+            id: user.id
+          }
+        });
+      })
+      .then(this.proxy(AuthController.updateSession))
+      .catch(this.proxy('handleServiceMessage'));
     },
 
     deleteAction: function() {

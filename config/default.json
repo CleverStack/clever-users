@@ -1,6 +1,6 @@
 {
   "clever-users": {
-    "driver"          : "ORM",
+    "driver": "ORM",
     
     "emailConfirmation": true,
 
@@ -9,7 +9,15 @@
       "fromName": "CleverStack",
       "fromEmail": "no-reply@cleverstack.io",
       "companyName": "CleverStack",
-      "companyLogo": "http://localhost:9000/images/logobig.png"
+      "companyLogo": "http://localhost:9000/images/logobig.png",
+      "template": {
+        "recovery": "passwordRecovery.ejs",
+        "confirmation": "newUser.ejs"
+      },
+      "subject": {
+        "recovery": "Password Recovery",
+        "confirmation": "Account Confirmation"
+      }
     },
 
     "requiresLogin": {

@@ -74,7 +74,7 @@ module.exports = function(Service, Promise, Exceptions, config, utils, UserModel
     },
 
     //tested
-    authenticate: function (credentials, options) {
+    authenticate: function(credentials, options) {
       options = options || {};
 
       return new Promise(function(resolve, reject) {
@@ -102,16 +102,17 @@ module.exports = function(Service, Promise, Exceptions, config, utils, UserModel
       });
     },
 
-    generatePasswordResetHash: function (user, tplData) {
+    generatePasswordResetHash: function(user, tplData) {
       return new Promise(function(resolve) {
-        var md5 = crypto.createHash('md5').update(user.createdAt + user.updatedAt + user.password + user.email + 'recover', 'utf8');
+        var md5  = crypto.createHash('md5').update(user.createdAt + user.updatedAt + user.password + user.email + 'recover', 'utf8')
+          , type = !user.confirmed ? 'confirmation' : 'recovery';
 
         resolve({
           hash        : md5.digest('hex'),
           expTime     : moment.utc().add('hours', 8).valueOf(),
-          tpl         : !user.confirmed ? 'newUser.ejs' : 'passwordRecovery.ejs',
+          tpl         : emailConfig.email.template[type],
           action      : !user.confirmed ? 'account/confirm' : 'resetPassword',
-          subject     : !user.confirmed ? 'CleverStack User Confirmation' : 'Password Recovery',
+          subject     : emailConfig.email.subject[type],
           user        : user,
 
           tplData     : tplData || {}
